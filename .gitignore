@@ -1,0 +1,26 @@
+# Ympäristömuuttujat ja salaisuudet
+cred.env
+
+# Virtuaaliympäristö
+venv/
+
+# Lokitiedostot
+weather_cron.log
+
+# Python-spesifiset tiedostot (suositeltavaa yleensä)
+__pycache__/
+*.pyc
+
+# Yleiset Ubuntu/VM tiedostot, jotka olivat listalla
+.bash_history
+.bash_logout
+.bashrc
+.cache/
+.gitconfig
+.lesshst
+.mysql_history
+.profile
+.selected_editor
+.ssh/
+.sudo_as_admin_successful
+.streamlit/
