@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LEMPillä leikkimistä</title>
+</head>
+<body style="font-family: Arial, sans-serif; text-align: center; margin-top: 50px; background-color: #f4f4f9; color: #333;">
+
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <h1>ns. LEMP-stack</h1>
+        <h3>SQL-palvelimen aika:</h3>
+        {% if error %}
+            <p style="color: #e74c3c; font-weight: bold;">{{ error }}</p>
+        {% elif db_time %}
+            <p style="font-size: 2.2em; font-weight: bold; color: #007bff;">{{ db_time }}</p>
+        {% else %}
+            <p>Jotain meni pieleen.</p>
+        {% endif %}
+    </div>
+
+    <div style="max-width: 600px; margin: 30px auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <h2>Data-analyysi</h2>
+       <a href=" http://86.50.21.26/data-analysis/" style="display:inline-block; padding:10px 20px; background:#007bff; color:#fff; text-decoration:none; border-radius:5px;">
+	Avaa Streamlit
+	</a>
+    </div>
+
+</body>
+</html>
