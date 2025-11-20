@@ -11,9 +11,9 @@ def index():
 
     try:
         config = configparser.ConfigParser()
-        config.read('config.ini') #ajetaan credentialit config.inistä
+        config.read('config.ini')
 
-        conn = mysql.connector.connect( #näillä nimillä config.inissä
+        conn = mysql.connector.connect(
             host=config.get('database', 'host'),
             user=config.get('database', 'user'),
             password=config.get('database', 'password'),
@@ -25,19 +25,15 @@ def index():
         result = cursor.fetchone()
 
         if result:
-            db_time = result[0].strftime('%Y-%m-%d %H:%M:%S') #näytetään aika
+            db_time = result[0].strftime('%Y-%m-%d %H:%M:%S')
 
         cursor.close()
         conn.close()
 
-    except Exception as err: #jotain meni pieleen
+    except Exception as err:
         error_msg = f"Virhe: {err}"
 
-    return render_template('index.html', db_time=db_time, error=error_msg) #palautellaan toivon mukaan kellonaika
+    return render_template('index.html', db_time=db_time, error=error_msg)
 
 if __name__ == '__main__':
     app.run(debug=True)
-
-@app.route('/data-analysis')
-def data_analysis():
-    return render_template('data_analysis.html', title="Viikko tehtävä 3 - Streamlit")
