@@ -3,3 +3,13 @@ Traceback (most recent call last):
     source /home/ubuntu/myapiapp/venv/bin/activate
     ^^^^^^
 NameError: name 'source' is not defined
+Traceback (most recent call last):
+  File "/home/ubuntu/myapiapp/fetch_air_quality.sh", line 2, in <module>
+    source /home/ubuntu/myapiapp/venv/bin/activate
+    ^^^^^^
+NameError: name 'source' is not defined
+Traceback (most recent call last):
+  File "/home/ubuntu/myapiapp/fetch_air_quality.sh", line 2, in <module>
+    source /home/ubuntu/myapiapp/venv/bin/activate
+    ^^^^^^
+NameError: name 'source' is not defined

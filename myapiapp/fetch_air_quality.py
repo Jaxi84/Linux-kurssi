@@ -5,7 +5,7 @@ import mysql.connector
 from dotenv import load_dotenv
 from datetime import datetime
 
-# cred ja tunnarit
+# Ladataan tunnukset .env-tiedostosta
 load_dotenv("cred.env")
 
 API_KEY = os.getenv("API_KEY")
@@ -20,7 +20,7 @@ locations = {
     "Oulunsalo": {"lat": 64.9290, "lon": 25.4110}
 }
 
-# Luo kanta, jos ei ole olemassa
+# Luo tietokanta, jos ei ole olemassa
 conn = mysql.connector.connect(
     host=MYSQL_HOST,
     user=MYSQL_USER,
@@ -32,7 +32,7 @@ conn.commit()
 cursor.close()
 conn.close()
 
-#yhistetään kantaan
+# Yhdistetään kantaan
 conn = mysql.connector.connect(
     host=MYSQL_HOST,
     user=MYSQL_USER,
@@ -41,12 +41,13 @@ conn = mysql.connector.connect(
 )
 cursor = conn.cursor()
 
-# Luo taulu jos ei ole
+# Pudotetaan vanha taulu ja luodaan uusi oikealla rakenteella
+cursor.execute("DROP TABLE IF EXISTS air_quality_data")
 cursor.execute("""
-CREATE TABLE IF NOT EXISTS air_quality_data (
+CREATE TABLE air_quality_data (
     id INT AUTO_INCREMENT PRIMARY KEY,
     city VARCHAR(50),
-    timestamp DATETIME,
+    time VARCHAR(5),
     aqi INT,
     co FLOAT,
     no2 FLOAT,
@@ -56,25 +57,28 @@ CREATE TABLE IF NOT EXISTS air_quality_data (
 )
 """)
 
-# haetaan data ja tallennetaan
+# Haetaan data ja tallennetaan
 for city, coords in locations.items():
     url = f"http://api.openweathermap.org/data/2.5/air_pollution?lat={coords['lat']}&lon={coords['lon']}&appid={API_KEY}"
     response = requests.get(url).json()
 
     if "list" not in response:
-        print(f"virhe API-vastauksesa kaupunnille {city}: {response}")
+        print(f"Virhe API-vastauksessa kaupungille {city}: {response}")
         continue
 
     data = response["list"][0]
     aqi = data["main"]["aqi"]
     components = data["components"]
 
+    # Kellonaika HH:MM
+    current_time = datetime.now().strftime("%H:%M")
+
     cursor.execute("""
-    INSERT INTO air_quality_data (city, timestamp, aqi, co, no2, o3, pm2_5, pm10)
+    INSERT INTO air_quality_data (city, time, aqi, co, no2, o3, pm2_5, pm10)
     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     """, (
         city,
-        datetime.now(),
+        current_time,
         aqi,
         components.get("co"),
         components.get("no2"),
@@ -86,4 +90,4 @@ for city, coords in locations.items():
 conn.commit()
 cursor.close()
 conn.close()
-print("Ilmanlaadun data päivitetty!")
+print("Ilmanlaadun data päivitetty! Kellonaika tallennettu muodossa HH:MM.")
