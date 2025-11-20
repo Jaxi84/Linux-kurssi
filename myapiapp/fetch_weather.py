@@ -5,7 +5,7 @@ import requests
 import mysql.connector
 from datetime import datetime
 
-# Lataa cred.env
+# cred.env ja tunnarit
 load_dotenv("cred.env")
 
 API_KEY = os.getenv("API_KEY")
@@ -14,10 +14,10 @@ MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
 MYSQL_HOST = os.getenv("MYSQL_HOST")
 MYSQL_DB = os.getenv("MYSQL_DB")
 
-# Kaupungit
+# kaupunnit
 cities = ["Oulu", "Oulunsalo"]
 
-# Luo tietokanta, jos ei ole olemassa
+# Luodaan kanta jos ei ole olemassa
 conn = mysql.connector.connect(
     host=MYSQL_HOST,
     user=MYSQL_USER,
@@ -29,7 +29,7 @@ conn.commit()
 cursor.close()
 conn.close()
 
-# Yhdistä tietokantaan
+# Yhdistä kantaan
 conn = mysql.connector.connect(
     host=MYSQL_HOST,
     user=MYSQL_USER,
@@ -45,7 +45,7 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS weather_data (
     timestamp DATETIME
 )''')
 
-# Hae ja tallenna data molemmille kaupungeille
+# Hae ja tallenna data kummallekkin paikalle
 for city in cities:
     url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"
     response = requests.get(url)
