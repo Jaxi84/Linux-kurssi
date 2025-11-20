@@ -1,0 +1,3 @@
+crontab -e
+*/15 * * * * cd /home/ubuntu/myapiapp && /home/ubuntu/myapiapp/venv/bin/python /home/ubuntu/myapiapp/fetch_weather.py >> /home/ubuntu/myapiapp/weather_cron.log 2>&1
+*/15 * * * * cd /home/ubuntu/myapiapp && /home/ubuntu/myapiapp/venv/bin/python /home/ubuntu/myapiapp/fetch_air_quality.sh >> /home/ubuntu/myapiapp/air_quality_cron.log 2>&1
