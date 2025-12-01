@@ -1,0 +1,46 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.env/
+
+# Environment variables
+creds.env
+
+# Logs
+*.log
+
+# Docker files
+docker-compose.override.yml
+*.pid
+
+# IDE settings
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# pytest cache
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# Build directories
+build/
+dist/
+*.egg-info/
+
+#mosquitto
+mosquitto/data/
+mosquitto/log/
