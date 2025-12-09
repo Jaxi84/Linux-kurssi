@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: frontend:latest
+        image: frontend-app:v2
         imagePullPolicy: Never  #käytä local  imagea minikubessa
         ports:
         - containerPort: 80

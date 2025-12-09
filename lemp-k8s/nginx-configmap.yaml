@@ -8,22 +8,24 @@ data:
         listen 80;
         server_name localhost;
 
-        # juuri, portilla 31132 suora yhteys
-        location / {
-            root   /usr/share/nginx/html;
-            index  index.html index.htm;
-            try_files $uri $uri/ /index.html;
+        #  SÄÄPALVELU Streamlit
+        # HOXHOX Tää sääntö pitää olla ENNEN /kube/ sääntöä, että se priotaan
+        # hox Streamlit vaatii WebSocketeja että toimii
+        location /kube/weather/ {
+            proxy_pass http://weather-ui:8501/kube/weather/;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_read_timeout 86400; # Estää websocketin katkeamisen
         }
 
-        location /kube/ {
-            alias /usr/share/nginx/html/;
-            try_files $uri $uri/ /index.html;
-        }
-
-
-        # API pyynnöt bäkkäriin
-        location /api/ {
-            proxy_pass http://backend:5000;
+        # bäkkäri API joka korjaus /kube/api/ ongelmaan
+        location /kube/api/ {
+            proxy_pass http://backend:5000/api/;
             proxy_http_version 1.1;
             proxy_set_header Upgrade $http_upgrade;
             proxy_set_header Connection 'upgrade';
@@ -31,9 +33,21 @@ data:
             proxy_cache_bypass $http_upgrade;
         }
 
-        # API pyynnöt /kube/:n kautta
-        location /kube/api/ {
-            rewrite ^/kube(/.*)$ $1 break;
+        #REACT frontti - /kube/ alipolussa
+        location /kube/ {
+            alias /usr/share/nginx/html/;
+            try_files $uri $uri/ /index.html;
+        }
+
+        #REACT frontin juuri / suora yhteys
+        location / {
+            root   /usr/share/nginx/html;
+            index  index.html index.htm;
+            try_files $uri $uri/ /index.html;
+        }
+
+        # bäkkäri API -suora yhteys
+        location /api/ {
             proxy_pass http://backend:5000;
             proxy_http_version 1.1;
             proxy_set_header Upgrade $http_upgrade;

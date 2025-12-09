@@ -30,6 +30,13 @@
         button:hover {
             background: #0056b3;
         }
+        /* Tehdään säänapista hieman erivärinen erottumisen vuoksi */
+        .weather-btn {
+            background-color: #28a745;
+        }
+        .weather-btn:hover {
+            background-color: #218838;
+        }
         #result {
             margin-top: 20px;
             padding: 15px;
@@ -48,7 +55,18 @@
             <button onclick="checkHealth()">Check Backend Health</button>
             <button onclick="initDB()">Initialize Database</button>
             <button onclick="getUsers()">Get Users</button>
+            <button onclick="getWeather()" class="weather-btn">Get Weather (+Save DB)</button>
         </div>
+
+	<div style="margin-top: 20px; border-top: 1px solid #ccc; padding-top: 20px;">
+            <p>Säädatasivulle:</p>
+            <a href="/kube/weather/" target="_blank">
+                <button style="background-color: #6f42c1;">Avaa säädatasivu 📊</button>
+            </a>
+        </div>
+
+
+
 
         <div id="result"></div>
     </div>
@@ -83,6 +101,18 @@
                 resultDiv.textContent = 'Users: ' + JSON.stringify(data, null, 2);
             } catch (error) {
                 resultDiv.textContent = 'Error: ' + error.message;
+            }
+        }
+
+        // UUSI FUNKTIO SÄÄLLE
+        async function getWeather() {
+            try {
+                // Käytetään POST-metodia, koska backend tallentaa tietokantaan
+                const response = await fetch('/api/weather', { method: 'POST' });
+                const data = await response.json();
+                resultDiv.textContent = 'Weather Data (Saved to DB): ' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                resultDiv.textContent = 'Error: ' + error.message + '\n(Varmista, että backend on päivitetty)';
             }
         }
     </script>

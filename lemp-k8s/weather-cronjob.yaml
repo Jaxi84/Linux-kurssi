@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: weather-fetcher
+spec:
+  schedule: "*/15 * * * *" # vartin välein
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: fetcher
+            image: weather-app:v1 # locali
+            imagePullPolicy: Never # ei ladata netistä
+            command: ["/bin/sh", "-c"]
+            args: ["python fetch_weather.py && python fetch_air_quality.py"]
+            env:
+            - name: MYSQL_HOST
+              value: "mysql"
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_USER
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_PASSWORD
+            - name: MYSQL_DB
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_DATABASE
+          restartPolicy: OnFailure

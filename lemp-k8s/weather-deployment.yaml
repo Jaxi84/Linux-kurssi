@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weather-ui
+  template:
+    metadata:
+      labels:
+        app: weather-ui
+    spec:
+      containers:
+      - name: streamlit
+        image: weather-app:v1
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8501
+        env:
+        - name: MYSQL_HOST
+          value: "mysql"
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_USER
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_PASSWORD
+        - name: MYSQL_DB
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_DATABASE
+        # Tässä on nyt korjattu ja kokonainen komentorivi
+        command: ["streamlit", "run", "streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.baseUrlPath=/kube/weather", "--server.enableCORS=false", "--server.enableXsrfProtection=false"]
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: weather-ui
+spec:
+  selector:
+    app: weather-ui
+  # TÄRKEÄÄ: Vain yksi type-määritys!
+  type: NodePort
+  ports:
+  - protocol: TCP
+    port: 8501
+    targetPort: 8501
+    nodePort: 31501

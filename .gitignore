@@ -1,26 +1,46 @@
-# Ympäristömuuttujat ja salaisuudet
+# --- TIETOTURVA & SALAISUUDET (TÄRKEÄT) ---
+lemp-k8s/mysql-secret.yaml
 cred.env
+.env
+*.pem
+.ssh/
 
-# Virtuaaliympäristö
+# --- KUBERNETES & DOCKER (Väliaikaistiedostot & Binäärit) ---
+.kube/
+.minikube/
+.docker/
+kubectl
+minikube-linux-amd64
+*.yaml.save
+.DS_Store
+
+# --- PYTHON & VIRTUAALIYMPÄRISTÖ ---
 venv/
-
-# Lokitiedostot
-weather_cron.log
-
-# Python-spesifiset tiedostot (suositeltavaa yleensä)
 __pycache__/
 *.pyc
+.streamlit/
 
-# Yleiset Ubuntu/VM tiedostot, jotka olivat listalla
+# --- LOKITIEDOSTOT ---
+*.log
+npm-debug.log*
+
+# --- LINUX / KOTIKANSION JÄRJESTELMÄTIEDOSTOT ---
+# Koska repo on home-kansiossa, estetään näitä vahingossa menemästä Gitiin
 .bash_history
 .bash_logout
 .bashrc
-.cache/
-.gitconfig
-.lesshst
-.mysql_history
 .profile
 .selected_editor
-.ssh/
 .sudo_as_admin_successful
-.streamlit/
+.lesshst
+.mysql_history
+.gitconfig
+.Xauthority
+.cache/
+.local/
+.wget-hsts
+
+# --- EDITORIT ---
+.vscode/
+.idea/
+*.swp
