@@ -1,0 +1,67 @@
+name: CI/CD for LEMP Containers
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  PROJECT_DIR: lemp-cicd 
+  SSH_USER: ubuntu
+  VM_DEPLOY_PATH: /opt/lemp/cicd 
+  
+jobs:
+  build-and-push:
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Ensure target directory exists and set permissions
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ env.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            sudo mkdir -p ${{ env.VM_DEPLOY_PATH }}/db/init/
+            sudo chown -R $USER:$USER ${{ env.VM_DEPLOY_PATH }} || true
+
+      - name: Copy deployment files to VM
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ env.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: ${{ env.PROJECT_DIR }}/db/init/init.sql,${{ env.PROJECT_DIR }}/docker-compose.prod.yml
+          target: ${{ env.VM_DEPLOY_PATH }}
+          
+      - name: Run Docker Compose deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ env.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+            cd ${{ env.VM_DEPLOY_PATH }}
+            
+            sudo docker-compose -f docker-compose.prod.yml down --remove-orphans || true
+            sudo docker-compose -f docker-compose.prod.yml pull
+            sudo docker-compose -f docker-compose.prod.yml up -d
+            
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8001/ || echo "000")
+            if [ "$HTTP_CODE" != "200" ]; then
+                echo "❌ Deployment failed! Kontti ei vastaa portissa 8001. HTTP Code: $HTTP_CODE"
+                sudo docker-compose -f docker-compose.prod.yml ps
+                exit 1
+            fi
+            
+            echo "✅ Deployment successful. Reload Nginx on host."
+            sudo systemctl reload nginx
