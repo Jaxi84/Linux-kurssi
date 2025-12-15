@@ -45,8 +45,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ env.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          # Kopioi compose-tiedostot ja db-alustus
-          source: ${{ env.PROJECT_DIR }}/db/init/init.sql,${{ env.PROJECT_DIR }}/docker-compose.prod.yml
+          source: docker-compose.prod.yml,db/,frontend/,backend/
           target: ${{ env.VM_DEPLOY_PATH }}
 
       - name: Run Docker Compose deployment

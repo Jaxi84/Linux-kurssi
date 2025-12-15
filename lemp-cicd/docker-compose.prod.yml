@@ -1,4 +1,6 @@
-version: "3.9"
+
+# docker-compose.prod.yml
+# Compose v2: ei version-kenttää
 
 services:
   db:
@@ -16,17 +18,20 @@ services:
       - lemp_network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 5
 
+  # Backend pidetään rakenteessa, mutta ei käynnistetä ellei profiilia pyydetä.
   backend:
-    build: 
+    profiles: ["backend"]           # käynnistä vain: docker compose --profile backend ...
+    build:
       context: ./backend
       dockerfile: Dockerfile
     image: ${DOCKERHUB_USERNAME}/lemp-backend:latest
     restart: always
-    expose: 
-      - "5000" 
+    expose:
+      - "5000"                      # muokkaa portti, kun backend valmis
     environment:
       DB_HOST: db
       DB_USER: ${DB_USER}
@@ -39,22 +44,24 @@ services:
       - lemp_network
 
   frontend:
-    build: 
+    build:
       context: ./frontend
       dockerfile: Dockerfile
     image: ${DOCKERHUB_USERNAME}/lemp-frontend:latest
     restart: always
     ports:
-      - "8001:8080" 
+      - "8001:8080"                 # host-Nginx proxy_pass http://localhost:8001 → OK
+    environment:
+      - PORT=8080
     depends_on:
-      backend:
-        condition: service_started
+      db:
+        condition: service_started   # frontend ei riipu backendistä tässä vaiheessa
     networks:
       - lemp_network
-    
+
 networks:
   lemp_network:
     driver: bridge
 
 volumes:
-  db_data:
+  db_data: {}
