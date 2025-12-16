@@ -1,14 +1,15 @@
+
 name: CI/CD for LEMP Containers
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 env:
   PROJECT_DIR: lemp-cicd
   SSH_USER: ubuntu
-  VM_DEPLOY_PATH: /opt/lemp/cicd
+  VM_DEPLOY_PATH: /opt/lemp/cicd   # pidetään tämä, luodaan tarvittaessa
 
 jobs:
   build-and-push:
@@ -16,10 +17,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
-      # Lisää Build & Push vaiheet tähän kun Node.js/Python koodi on valmis.
-      # Toistaiseksi jätetään tyhjäksi, jotta workflow suorittuu (Deploy-vaihe riippuu tästä).
-      # Tämä tulee korvaamaan Copy-to-VM -vaiheen.
+      # (Valinnainen) tänne voi myöhemmin lisätä build & push Docker Hubiin
 
   deploy:
     runs-on: ubuntu-latest
@@ -35,7 +33,7 @@ jobs:
           username: ${{ env.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            # Tarvitaan, jos db/init/init.sql tiedostoja kopioidaan
+            set -e
             sudo mkdir -p ${{ env.VM_DEPLOY_PATH }}/db/init/
             sudo chown -R $USER:$USER ${{ env.VM_DEPLOY_PATH }} || true
 
@@ -45,10 +43,10 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ env.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: docker-compose.prod.yml,db/,frontend/,backend/
+          source: "docker-compose.prod.yml,db/,frontend/,backend/"
           target: ${{ env.VM_DEPLOY_PATH }}
 
-      - name: Run Docker Compose deployment
+      - name: Write .env on VPS from Secrets (DO NOT commit .env to repo)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -57,36 +55,46 @@ jobs:
           script: |
             set -e
             cd ${{ env.VM_DEPLOY_PATH }}
-            
-            # Määrittele salaisuudet ympäristömuuttujiksi (käytetään pull- ja up-komennoissa)
-            SECRETS_ENV="MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }} \
-                         DB_USER=${{ secrets.DB_USER }} \
-                         DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
-                         DB_NAME=${{ secrets.DB_NAME }} \
-                         DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}"
+            cat > .env <<EOF
+            MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
+            EOF
+            ls -la .env
 
-            # Pysäytä ja poista vanhat palvelut
-            $SECRETS_ENV sudo docker-compose -f docker-compose.prod.yml down --remove-orphans || true
-            
-            # Pullaa uusimmat imaget
-            $SECRETS_ENV sudo docker-compose -f docker-compose.prod.yml pull
-            
-            # Käynnistä uudet palvelut
-            $SECRETS_ENV sudo docker-compose -f docker-compose.prod.yml up -d
-            
-            # Testi: Odota hetki ja tarkista /health endpoint
-            echo "Running smoke test on http://localhost:8001/health"
-            sleep 15 # Anna reilusti aikaa käynnistymiseen
-            
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --retry 5 --retry-delay 3 http://localhost:8001/health || echo "000")
-            
+      - name: Deploy with Docker Compose v2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ env.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+            cd ${{ env.VM_DEPLOY_PATH }}
+            # V2-syntaksi: docker compose
+            docker compose --env-file .env -f docker-compose.prod.yml down
+            docker compose --env-file .env -f docker-compose.prod.yml up -d --build
+            docker compose -f docker-compose.prod.yml ps
+
+            echo "Running smoke test via Nginx reverse proxy: http://localhost/cicd/health"
+            # Odota palvelun käynnistymistä
+            for i in $(seq 1 10); do
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/cicd/health || echo "000")
+              if [ "$HTTP_CODE" = "200" ]; then
+                echo "✅ Frontend healthy (200 OK)"
+                break
+              fi
+              echo "Waiting for app... ($i)"
+              sleep 3
+            done
+
             if [ "$HTTP_CODE" != "200" ]; then
-                echo "❌ Deployment FAILED: Frontend service is unhealthy. HTTP Code: $HTTP_CODE"
-                # Näytä konttien tila ja frontendin logit debuggausta varten
-                sudo docker-compose -f docker-compose.prod.yml ps
-                sudo docker-compose -f docker-compose.prod.yml logs frontend 
-                exit 1
+              echo "❌ Deployment FAILED: HTTP $HTTP_CODE"
+              docker compose -f docker-compose.prod.yml ps
+              docker compose -f docker-compose.prod.yml logs frontend
+              exit 1
             fi
-            
-            echo "✅ Deployment successful. Frontend responded with 200 OK. Reload Nginx on host."
-            sudo systemctl reload nginx
+
+            echo "✅ Deployment successful. Reloading N            echo "✅ Deployment successful. Reloading Nginx on host."

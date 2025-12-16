@@ -1,0 +1,87 @@
+services:
+  db:
+    image: mysql:8.0
+    restart: always
+    volumes:
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+      - db_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    networks: [lemp_network]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: ${DOCKERHUB_USERNAME}/lemp-frontend:latest
+    restart: always
+    ports:
+      - "8001:8080"     # /cicd → localhost:8001
+    environment:
+      - PORT=8080
+    networks: [lemp_network]
+
+  weather:
+    build:
+      context: ./weather
+      dockerfile: Dockerfile
+    image: ${DOCKERHUB_USERNAME}/lemp-weather:latest
+    restart: always
+    ports:
+      - "8002:8081"     # /weather → localhost:8002
+    environment:
+      DB_HOST: db
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: weatherdb
+      PORT: 8081
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [lemp_network]
+
+  weather-fetcher:
+    build:
+      context: ./weather
+      dockerfile: fetcher.Dockerfile
+    image: ${DOCKERHUB_USERNAME}/lemp-weather-fetcher:latest
+    restart: "no"        # ajetaan kerran käynnistyksessä; ajasta erikseen cronilla jos haluat
+    environment:
+      API_KEY: ${API_KEY}
+      DB_HOST: db
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: weatherdb
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [lemp_network]
+    env_file:    # env_file:
+      - .env
+  dashboard:
+    build: ./dashboard
+    container_name: lemp-cicd-dashboard
+    restart: always
+    ports:
+      - "8003:8501"
+    environment:
+      - DB_HOST=db
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+    depends_on:
+      - db
+networks:
+  lemp_network:
+    driver: bridge
+
+volumes:
+  db_data:
